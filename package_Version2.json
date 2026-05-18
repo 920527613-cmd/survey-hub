@@ -1,0 +1,15 @@
+{
+  "name": "data-analyzer-minimal",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "echarts": "^5.4.3",
+    "papaparse": "^5.4.1",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build"
+  }
+}
