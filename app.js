@@ -367,18 +367,84 @@ function downloadChart(chartId, chartType) {
     link.click();
 }
 
-// Export PDF
-function exportPDF() {
+// Export PDF - Fixed version
+async function exportPDF() {
+    showMessage('⏳ 正在生成 PDF 报告，请稍候...', 'success');
+    
     const element = document.querySelector('.content');
+    const container = document.createElement('div');
+    container.style.background = '#fff';
+    container.style.padding = '20px';
+    
+    // Clone the content
+    const clone = element.cloneNode(true);
+    
+    // Remove unwanted elements
+    clone.querySelectorAll('.upload-area, .controls, .search-bar, .export-section, .section-title').forEach(el => el.remove());
+    
+    // Convert charts to images before PDF export
+    const chartContainers = clone.querySelectorAll('[id^="chart-"]');
+    for (let chartContainer of chartContainers) {
+        const chartId = chartContainer.id;
+        const chart = charts[chartId];
+        
+        if (chart) {
+            try {
+                const imageUrl = chart.getDataURL({
+                    type: 'png',
+                    pixelRatio: 2,
+                    backgroundColor: '#fff'
+                });
+                
+                // Create image element
+                const img = document.createElement('img');
+                img.src = imageUrl;
+                img.style.width = '100%';
+                img.style.maxWidth = '800px';
+                img.style.height = 'auto';
+                img.style.margin = '10px 0';
+                
+                // Replace chart container with image
+                chartContainer.parentNode.replaceChild(img, chartContainer);
+            } catch (e) {
+                console.warn('Chart export failed:', e);
+            }
+        }
+    }
+    
+    container.appendChild(clone);
+    document.body.appendChild(container);
+    
+    // Give time for images to load
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
     const opt = {
-        margin: 10,
+        margin: [10, 10, 10, 10],
         filename: `数据分析报告-${new Date().toISOString().split('T')[0]}.pdf`,
         image: { type: 'png', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { orientation: 'l', unit: 'mm', format: 'a4' }
+        html2canvas: { 
+            scale: 2, 
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#ffffff'
+        },
+        jsPDF: { 
+            orientation: 'p',
+            unit: 'mm', 
+            format: 'a4'
+        }
     };
     
-    html2pdf().set(opt).from(element).save();
+    try {
+        await html2pdf().set(opt).from(container).save();
+        showMessage('✅ PDF 报告已导出成功！', 'success');
+    } catch (error) {
+        showMessage('❌ PDF 导出失败，请重试', 'error');
+        console.error('PDF export error:', error);
+    } finally {
+        // Clean up
+        document.body.removeChild(container);
+    }
 }
 
 // Initialize on page load
